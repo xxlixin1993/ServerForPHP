@@ -14,10 +14,21 @@
 
 #define PORT 8000 // 默认端口号
 
+struct http_request {
+
+};
+
+// create socket
 int create_socket();
 
+// bind socket
 void bind_socket(int listen_d, int port);
 
+// read in request
 int read_in(int socket, char *buf, int len);
 
+// read in http request
+void read_http_request(int socket, char *buf, int len);
+
+// control request
 void handle(int connect_d);

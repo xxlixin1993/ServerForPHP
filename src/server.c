@@ -23,6 +23,25 @@ int read_in(int socket, char *buf, int len) {
     return len - slen;
 }
 
+
+void read_http_request(int socket, char *buf, int len) {
+    while (1) {
+        int buf_len = recv(socket, buf, len, 0);
+        if (buf_len < 0) {
+            // when errno is EAGAIN and in non-blocking mode, the buf is end.
+            if (errno == EAGAIN) {
+                break;
+            }
+        } else if (buf_len == 0) {
+            // The socket has been properly closed.
+            break;
+        }
+        if (buf[buf_len - 1] == '\n' && buf[buf_len - 2] == '\r' && buf[buf_len - 3] == '\n' && buf[buf_len - 4] == '\r') {
+            break;
+        }
+    }
+}
+
 void bind_socket(int listen_d, int port) {
     // bind
     struct sockaddr_in name;
@@ -40,11 +59,11 @@ void bind_socket(int listen_d, int port) {
     }
 }
 
-void handle(int connect_d){
+void handle(int connect_d) {
     // TODO handle http request
-    char buf[1024];
-    bzero(buf, 1024);
-    read_in(connect_d, buf, sizeof(buf));
+    char buf[4096];
+    bzero(buf, 4096);
+    read_http_request(connect_d, buf, sizeof(buf));
 
-    printf("%s",buf);
+    printf("%s", buf);
 }
