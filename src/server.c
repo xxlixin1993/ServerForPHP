@@ -1,5 +1,5 @@
-#include "../include/log.h";
-#include "../include/server.h";
+#include "../include/log.h"
+#include "../include/server.h"
 
 
 int create_socket() {
