@@ -6,7 +6,8 @@
 #include <errno.h>
 #include <stdlib.h>
 
-#endif //SERVERFORPHP_LOG_H
-
 // print error info and exit
 void error(char *msg, int exit_no);
+
+#endif //SERVERFORPHP_LOG_H
+

@@ -1,8 +1,10 @@
 #include "../include/log.h"
 #include "../include/server.h"
+#include "../include/config.h"
 
 int main(int argc, char **argv) {
     int listen_d = create_socket();
+
     bind_socket(listen_d, PORT);
 
     // listen, list len is 10
