@@ -64,6 +64,10 @@ void handle(int connect_d) {
     // get request header info
     read_request_header(&io, &hhr);
 
+    // format uri, filename, params
+    // TODO
+    int is_static = parse_uri(hhr.uri, hhr.filename, hhr.name, hhr.cgiargs);
+    printf("%i", is_static);exit(1);
     // TODO Determines whether dynamic requests or static requests
 
 }

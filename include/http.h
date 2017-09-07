@@ -29,5 +29,8 @@ void read_request_header(struct io_class *io, struct http_header *hhr);
 // Determines whether the start of the string contains lowercase "http_str". Included return 1 else return 0
 int is_included_str(char *str, char *http_str);
 
+// format uri, filename, params and return whether dynamic requests or static requests
+int parse_uri(char *uri, char *filename, char *name, char *cgiargs);
+
 #endif //SERVERFORPHP_HTTP_H
 

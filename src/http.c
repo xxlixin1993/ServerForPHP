@@ -66,6 +66,12 @@ int is_included_str(char *str, char *http_str) {
 
 }
 
+// format uri, filename, params and return whether dynamic requests or static requests
+int parse_uri(char *uri, char *filename, char *name, char *cgiargs){
+
+}
+
+
 // return server error response
 void server_error_response(int socket, char *cause, char *err_num, char *short_msg, char *long_msg) {
     char buf[BUF_LEN], body[BUF_LEN];
