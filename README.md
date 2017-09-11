@@ -1,4 +1,4 @@
-![Build Status](https://travis-ci.org/xxlixin1993/ServerForPHP.svg?branch=master)
+[![Build Status](https://travis-ci.org/xxlixin1993/ServerForPHP.svg?branch=master)](https://travis-ci.org/xxlixin1993/ServerForPHP)
 
 # ServerForPHP
 A web server for php-fpm
