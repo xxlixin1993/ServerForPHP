@@ -1,0 +1,17 @@
+language: c
+
+sudo: false
+compiler:
+  - gcc
+  - clang
+
+os:
+  - linux
+
+addons:
+  apt:
+    packages:
+      - cmake
+
+script:
+  - bash ./travis/compile.sh

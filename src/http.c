@@ -68,11 +68,14 @@ int is_included_str(char *str, char *http_str) {
 
 // format uri, filename, params and return whether dynamic requests or static requests
 int parse_uri(char *uri, char *filename, char *name, char *cgiargs) {
-    char *query, *ptr, *dir;
+    char *query, *ptr;
     char *suffix = ".php";
-    char uri_copy[BUF_LEN], cwd[BUF_LEN];
+    char uri_copy[BUF_LEN], dir[BUF_LEN];
     strcpy(uri_copy, uri);
 
+    //get work dir
+    getcwd(dir, BUF_LEN);
+    strcat(dir, "/../test");
 
     if (query = strstr(uri_copy, suffix)) {
         // dynamic requests
@@ -90,7 +93,7 @@ int parse_uri(char *uri, char *filename, char *name, char *cgiargs) {
         }
 
         // contains the full path name
-        strcpy(filename, WORK_DIR);
+        strcpy(filename, dir);
         strcat(filename, uri_copy);
         // not contain the full path name
         strcpy(name, uri_copy);
@@ -106,7 +109,7 @@ int parse_uri(char *uri, char *filename, char *name, char *cgiargs) {
             *ptr = '\0';
         }
 
-        strcpy(filename, WORK_DIR);
+        strcpy(filename, dir);
         strcat(filename, uri_copy);
         // if end of '/', add index.html
         if (uri_copy[strlen(uri_copy) - 1] == '/') {
@@ -158,14 +161,14 @@ void get_file_type(char *filename, char *filetype) {
 // read the contents of the static file, sent to the client
 void server_static(int fd, char *filename, int file_size) {
     int srcfd;
-    char *srcp, filet_ype[BUF_LEN], buf[BUF_LEN];
+    char *srcp, file_type[BUF_LEN], buf[BUF_LEN];
 
     // get MIME type
-    get_file_type(filename, filet_ype);
+    get_file_type(filename, file_type);
     sprintf(buf, "HTTP/1.1 200 OK\r\n");
     sprintf(buf, "%sServer: Web Server\r\n", buf);
     sprintf(buf, "%sContent-Length: %d\r\n", buf, file_size);
-    sprintf(buf, "%sContent-Type: %s\r\n\r\n", buf, filet_ype);
+    sprintf(buf, "%sContent-Type: %s\r\n\r\n", buf, file_type);
     if (send(fd, buf, strlen(buf), 0) < 0) {
         error("write to client error", 1);
     }
@@ -182,7 +185,7 @@ void server_static(int fd, char *filename, int file_size) {
         error("send to client error", 1);
     }
 
-    if (munmap(srcp, filet_ype) < 0) {
+    if (munmap(srcp, file_size) < 0) {
         error("munmap error", 1);
     }
 }

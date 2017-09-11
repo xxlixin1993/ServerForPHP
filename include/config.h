@@ -7,7 +7,5 @@
 // buffer length
 #define BUF_LEN 4096
 
-// working directory
-#define WORK_DIR "/home/lixin/ServerForPHP/test"
 
 #endif //SERVERFORPHP_CONFIG_H
