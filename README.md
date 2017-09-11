@@ -17,7 +17,7 @@ bash travis/compile.sh
 ### Run
 
 1. `/path/to/ServerForPHP/bin/ServerForPHP`
-2. curl 127.0.0.1:8000
+2. `curl 127.0.0.1:8000`
 ```
 lixin@lixin-PC:~/ServerForPHP$ curl 127.0.0.1:8000
 <h1>Welcome</h1>
