@@ -2,7 +2,7 @@
 #include "../include/server.h"
 #include "../include/config.h"
 
-int main(int argc, char **argv) {
+void main(int argc, char **argv) {
     int listen_d = create_socket();
 
     bind_socket(listen_d, PORT);
@@ -25,6 +25,4 @@ int main(int argc, char **argv) {
         handle(connect_d);
         close(connect_d);
     }
-
-    return 0;
 }

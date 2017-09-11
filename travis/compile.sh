@@ -1,3 +1,3 @@
 #!/bin/bash
-cd ./bin && cmake .. && make
+mkdir bin && cd ./bin && cmake .. && make
 
