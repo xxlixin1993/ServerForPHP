@@ -65,9 +65,43 @@ void handle(int connect_d) {
     read_request_header(&io, &hhr);
 
     // format uri, filename, params
-    // TODO
     int is_static = parse_uri(hhr.uri, hhr.filename, hhr.name, hhr.cgiargs);
-    printf("%i", is_static);exit(1);
-    // TODO Determines whether dynamic requests or static requests
 
+    struct stat sbuf;
+    // determine whether the request file exists
+    if (stat(hhr.filename, &sbuf) < 0) {
+        server_error_response(
+                connect_d,
+                hhr.filename,
+                "404",
+                "Not found",
+                "Server couldn't find this file");
+        return;
+    }
+
+    if (is_static) {
+        // determine whether the file is simple and has read permissions
+        if (!S_ISREG(sbuf.st_mode) || !(S_IRUSR & sbuf.st_mode)) {
+            server_error_response(
+                    connect_d,
+                    hhr.filename,
+                    "403",
+                    "Forbidden",
+                    "Server couldn't read the file");
+            return;
+        }
+        server_static(connect_d, hhr.filename, sbuf.st_size);
+    } else {
+        // determine whether the file has execute permissions
+        if (!S_ISREG(sbuf.st_mode) || !(S_IXUSR & sbuf.st_mode)) {
+            server_error_response(
+                    connect_d,
+                    hhr.filename,
+                    "403",
+                    "Forbidden",
+                    "Server couldn't run the CGI program");
+        }
+        //TODO
+        server_dynamic(&io, &hhr);
+    }
 }

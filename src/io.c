@@ -66,3 +66,4 @@ ssize_t io_readline(struct io_class *io, void *buf, size_t len) {
     *buf_p = 0;
     return n;
 }
+

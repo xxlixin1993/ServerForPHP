@@ -21,8 +21,8 @@ int main(int argc, char **argv) {
         if (connect_d < 0) {
             error("Accept error", 1);
         }
-        handle(connect_d);
 
+        handle(connect_d);
         close(connect_d);
     }
 

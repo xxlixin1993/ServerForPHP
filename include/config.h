@@ -1,7 +1,13 @@
 #ifndef SERVERFORPHP_CONFIG_H
 #define SERVERFORPHP_CONFIG_H
 
-#define PORT 8000 // default port
-#define BUF_LEN 4096 //buffer length
+// default port
+#define PORT 8000
+
+// buffer length
+#define BUF_LEN 4096
+
+// working directory
+#define WORK_DIR "/home/lixin/ServerForPHP/test"
 
 #endif //SERVERFORPHP_CONFIG_H

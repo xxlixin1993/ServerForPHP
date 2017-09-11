@@ -67,8 +67,54 @@ int is_included_str(char *str, char *http_str) {
 }
 
 // format uri, filename, params and return whether dynamic requests or static requests
-int parse_uri(char *uri, char *filename, char *name, char *cgiargs){
+int parse_uri(char *uri, char *filename, char *name, char *cgiargs) {
+    char *query, *ptr, *dir;
+    char *suffix = ".php";
+    char uri_copy[BUF_LEN], cwd[BUF_LEN];
+    strcpy(uri_copy, uri);
 
+
+    if (query = strstr(uri_copy, suffix)) {
+        // dynamic requests
+        // extract query parameters
+        ptr = index(uri_copy, '?');
+        if (ptr) {
+            strcpy(cgiargs, ptr + 1);
+            *ptr = '\0';
+        } else {
+            // like "index.php/class/method" will be extracted "class/method" param
+            if (*(query + sizeof(suffix)) == '/') {
+                strcpy(cgiargs, query + sizeof(suffix) + 1);
+                *(query + sizeof(suffix)) = '\0';
+            }
+        }
+
+        // contains the full path name
+        strcpy(filename, WORK_DIR);
+        strcat(filename, uri_copy);
+        // not contain the full path name
+        strcpy(name, uri_copy);
+
+        return 0;
+    } else {
+        // static requests
+        strcpy(cgiargs, "");
+
+        // delete useless parameters, like "index.html?12312313"
+        ptr = index(uri_copy, '?');
+        if (ptr) {
+            *ptr = '\0';
+        }
+
+        strcpy(filename, WORK_DIR);
+        strcat(filename, uri_copy);
+        // if end of '/', add index.html
+        if (uri_copy[strlen(uri_copy) - 1] == '/') {
+            strcat(filename, "index.html");
+        }
+
+        return 1;
+    }
 }
 
 
@@ -93,3 +139,55 @@ void server_error_response(int socket, char *cause, char *err_num, char *short_m
     send(socket, body, strlen(body), 0);
 }
 
+
+// judge the file type based on the file suffix
+void get_file_type(char *filename, char *filetype) {
+    if (strstr(filename, ".html")) {
+        strcpy(filetype, "text/html");
+    } else if (strstr(filename, ".gif")) {
+        strcpy(filetype, "image/gif");
+    } else if (strstr(filename, ".jpg")) {
+        strcpy(filetype, "image/jpeg");
+    } else if (strstr(filename, ".png")) {
+        strcpy(filetype, "image/png");
+    } else {
+        strcpy(filetype, "text/plain");
+    }
+}
+
+// read the contents of the static file, sent to the client
+void server_static(int fd, char *filename, int file_size) {
+    int srcfd;
+    char *srcp, filet_ype[BUF_LEN], buf[BUF_LEN];
+
+    // get MIME type
+    get_file_type(filename, filet_ype);
+    sprintf(buf, "HTTP/1.1 200 OK\r\n");
+    sprintf(buf, "%sServer: Web Server\r\n", buf);
+    sprintf(buf, "%sContent-Length: %d\r\n", buf, file_size);
+    sprintf(buf, "%sContent-Type: %s\r\n\r\n", buf, filet_ype);
+    if (send(fd, buf, strlen(buf), 0) < 0) {
+        error("write to client error", 1);
+    }
+
+    if ((srcfd = open(filename, O_RDONLY, 0)) < 0) {
+        error("open file error", 1);
+    }
+
+    if ((srcp = mmap(0, file_size, PROT_READ, MAP_PRIVATE, srcfd, 0)) == ((void *) -1)) {
+        error("mmap error", 1);
+    }
+    close(srcfd);
+    if (send(fd, srcp, file_size, 0) < 0) {
+        error("send to client error", 1);
+    }
+
+    if (munmap(srcp, filet_ype) < 0) {
+        error("munmap error", 1);
+    }
+}
+
+// handle dynamic php requests
+void server_dynamic(struct io_class *io, struct http_header *hhr) {
+
+}
