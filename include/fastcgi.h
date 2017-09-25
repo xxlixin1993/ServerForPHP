@@ -48,6 +48,23 @@ typedef struct {
     FCGI_BeginRequestBody body;
 } FCGI_BeginRequestRecord;
 
+/*
+ * 结束请求记录的协议体
+ */
+typedef struct {
+    unsigned char appStatusB3;
+    unsigned char appStatusB2;
+    unsigned char appStatusB1;
+    unsigned char appStatusB0;
+    unsigned char protocolStatus;   // 协议级别的状态码
+    unsigned char reserved[3];
+} FCGI_EndRequestBody;
+
+// 读取协议记录函数指针
+typedef ssize_t (*read_record)(int, void *, size_t);
+
+// 发送php结果给客户端回调函数声明
+typedef ssize_t (*send_to_client)(int, int, char *, int, char *, FCGI_EndRequestBody *);
 
 /*
  * 可用于FCGI_Header的type组件的值
@@ -84,5 +101,8 @@ int create_fastcgi_fd();
 
 // send fastcgi request
 int send_fastcgi(struct io_class *io, struct http_header *hhr, int sock);
+
+// Accept the fastcgi response
+int recv_fastcgi(int fd, int sock);
 
 #endif //SERVERFORPHP_FASTCGI_H

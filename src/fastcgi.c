@@ -1,6 +1,7 @@
 #include "../include/fastcgi.h"
 #include "../include/log.h"
 #include "../include/io.h"
+#include "../include/config.h"
 
 /*
  * 构造协议记录头部，返回FCGI_Header结构体
@@ -131,11 +132,7 @@ int sendEmptyParamsRecord(int fd, int requestId) {
  * 发送成功返回0
  * 出错返回-1
  */
-int sendStdinRecord(
-        int fd,
-        int requestId,
-        char *data,
-        int len) {
+int sendStdinRecord(int fd, int requestId, char *data, int len) {
     int cl = len, pl, ret;
     char buf[8] = {0};
 
@@ -221,9 +218,9 @@ int create_fastcgi_fd() {
  */
 int send_fastcgi(struct io_class *io, struct http_header *hhr, int sock) {
     int requestId, i, l;
-    char *buf;
 
     requestId = sock;
+    char *buf;
 
     // params参数名
     char *paname[] = {
@@ -253,11 +250,13 @@ int send_fastcgi(struct io_class *io, struct http_header *hhr, int sock) {
         return -1;
     }
 
+    // TODO ERROR
     // 发送params参数
     l = sizeof(paoffset) / sizeof(paoffset[0]);
     for (i = 0; i < l; i++) {
         // params参数的值不为空才发送
-        if (strlen((char *) (((int) hhr) + paoffset[i])) > 0) {
+        if (strlen((char *) (((int) hhr) + paoffset[i])) > 0)
+        {
             if (sendParamsRecord(sock, requestId, paname[i], strlen(paname[i]),
                                  (char *) (((int) hhr) + paoffset[i]),
                                  strlen((char *) (((int) hhr) + paoffset[i]))) < 0) {
@@ -279,7 +278,7 @@ int send_fastcgi(struct io_class *io, struct http_header *hhr, int sock) {
         buf = (char *) malloc(l + 1);
         memset(buf, '\0', l);
         if (io_read(io, buf, l) < 0) {
-            error("rio_readn error", 1);
+            error("io_readn error", 1);
             free(buf);
             return -1;
         }
@@ -297,6 +296,152 @@ int send_fastcgi(struct io_class *io, struct http_header *hhr, int sock) {
     // 发送空的stdin数据
     if (sendEmptyStdinRecord(sock, requestId) < 0) {
         error("sendEmptyStdinRecord error", 1);
+        return -1;
+    }
+    return 0;
+}
+
+/*
+ * php处理结果发送给客户端
+ */
+int send_to_cli(int fd, int outlen, char *out,
+                int errlen, char *err, FCGI_EndRequestBody *endr
+) {
+    char *p;
+    int n;
+
+    char buf[BUF_LEN];
+    sprintf(buf, "HTTP/1.1 200 OK\r\n");
+    sprintf(buf, "%sServer: Zhou Web Server\r\n", buf);
+    sprintf(buf, "%sContent-Length: %d\r\n", buf, outlen + errlen);
+    sprintf(buf, "%sContent-Type: %s\r\n\r\n", buf, "text/html");
+    if (send(fd, buf, strlen(buf), 0) < 0) {
+        error("write to client error", 1);
+    }
+
+    if (outlen > 0) {
+        p = index(out, '\r');
+        n = (int) (p - out);
+        if (send(fd, p + 3, outlen - n - 3, 0) < 0) {
+            error("rio_written error", 1);
+            return -1;
+        }
+    }
+
+    if (errlen > 0) {
+        if (send(fd, err, errlen, 0) < 0) {
+            error("rio_written error", 1);
+            return -1;
+        }
+    }
+}
+
+/*
+ * 读取php-fpm处理结果
+ * 读取成功返回0
+ * 出错返回-1
+ */
+int recvRecord(read_record rr, send_to_client stc, int cfd, int fd, int requestId) {
+    FCGI_Header responHeader;
+    FCGI_EndRequestBody endr;
+    char *conBuf = NULL, *errBuf = NULL;
+    int buf[8], cl, ret;
+    int fcgi_rid;  // 保存fpm发送过来的request id
+
+    int outlen = 0, errlen = 0;
+
+
+    // 读取协议记录头部
+    while (rr(fd, &responHeader, FCGI_HEADER_LEN) > 0) {
+        fcgi_rid = (int) (responHeader.requestIdB1 << 8) + (int) (responHeader.requestIdB0);
+        if (responHeader.type == FCGI_STDOUT && fcgi_rid == requestId) {
+            // 获取内容长度
+            cl = (int) (responHeader.contentLengthB1 << 8) + (int) (responHeader.contentLengthB0);
+            //*outlen += cl;
+            outlen += cl;
+
+            // 如果不是第一次读取FCGI_STDOUT记录
+            if (conBuf != NULL) {
+                // 扩展空间
+                //conBuf = realloc(*sout, *outlen);
+                conBuf = realloc(conBuf, outlen);
+            } else {
+                conBuf = (char *) malloc(cl);
+                //*sout = conBuf;
+            }
+
+            ret = rr(fd, conBuf, cl);
+            if (ret == -1 || ret != cl) {
+                printf("read fcgi_stdout record error\n");
+                return -1;
+            }
+
+            // 读取填充内容，忽略
+            if (responHeader.paddingLength > 0) {
+                ret = rr(fd, buf, responHeader.paddingLength);
+                if (ret == -1 || ret != responHeader.paddingLength) {
+                    printf("read fcgi_stdout padding error %d\n", responHeader.paddingLength);
+                    return -1;
+                }
+            }
+        } else if (responHeader.type == FCGI_STDERR && fcgi_rid == requestId) {
+            // 获取内容长度
+            cl = (int) (responHeader.contentLengthB1 << 8) + (int) (responHeader.contentLengthB0);
+            //*errlen += cl;
+            errlen += cl;
+
+            // 如果不是第一次读取FCGI_STDOUT记录
+            if (errBuf != NULL) {
+                // 扩展空间
+                errBuf = realloc(errBuf, errlen);
+            } else {
+                errBuf = (char *) malloc(cl);
+                //*serr = errBuf;
+            }
+
+            ret = rr(fd, errBuf, cl);
+            if (ret == -1 || ret != cl) {
+                return -1;
+            }
+
+            // 读取填充内容，忽略
+            if (responHeader.paddingLength > 0) {
+                ret = rr(fd, buf, responHeader.paddingLength);
+                if (ret == -1 || ret != responHeader.paddingLength) {
+                    return -1;
+                }
+            }
+        } else if (responHeader.type == FCGI_END_REQUEST && fcgi_rid == requestId) {
+            // 读取结束请求协议体
+            ret = rr(fd, &endr, sizeof(FCGI_EndRequestBody));
+
+            if (ret == -1 || ret != sizeof(FCGI_EndRequestBody)) {
+                free(conBuf);
+                free(errBuf);
+                return -1;
+            }
+
+            stc(cfd, outlen, conBuf, errlen, errBuf, &endr);
+            free(conBuf);
+            free(errBuf);
+            return 0;
+        }
+    }
+    return 0;
+}
+
+
+/*
+ * 接收fastcgi返回的数据
+ */
+int recv_fastcgi(int fd, int sock) {
+    int requestId;
+
+    requestId = sock;
+
+    // 读取处理结果
+    if (recvRecord(io_read, send_to_cli, fd, sock, requestId) < 0) {
+        error("recvRecord error", 1);
         return -1;
     }
 

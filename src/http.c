@@ -201,7 +201,7 @@ void server_dynamic(struct io_class *io, struct http_header *hhr) {
     // 发送http请求数据
     send_fastcgi(io, hhr, sock);
 
-    // 接收处理结果 TODO
+    // 接收处理结果
     recv_fastcgi(io->fd, sock);
 
     close(sock); // 关闭与fastcgi服务器连接的套接字
