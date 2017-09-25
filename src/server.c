@@ -101,7 +101,6 @@ void handle(int connect_d) {
                     "Forbidden",
                     "Server couldn't run the CGI program");
         }
-        //TODO
         server_dynamic(&io, &hhr);
     }
 }

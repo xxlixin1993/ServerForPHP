@@ -2,6 +2,7 @@
 #include "../include/log.h"
 #include "../include/tool.h"
 #include "../include/config.h"
+#include "../include/fastcgi.h"
 
 // read http request method uri version, format struct http_header method uri version
 void format_method_uri_version(char *buf, struct http_header *hhr) {
@@ -192,5 +193,16 @@ void server_static(int fd, char *filename, int file_size) {
 
 // handle dynamic php requests
 void server_dynamic(struct io_class *io, struct http_header *hhr) {
+    int sock;
 
+    // create connect fastcgi socket
+    sock = create_fastcgi_fd();
+
+    // 发送http请求数据
+    send_fastcgi(io, hhr, sock);
+
+    // 接收处理结果 TODO
+    recv_fastcgi(io->fd, sock);
+
+    close(sock); // 关闭与fastcgi服务器连接的套接字
 }
