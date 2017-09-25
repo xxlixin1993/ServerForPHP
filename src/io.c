@@ -37,6 +37,29 @@ ssize_t io_read(struct io_class *io, char *buf, size_t len) {
     return count;
 }
 
+ssize_t http_readn(int fd, void *usrbuf, size_t n)
+{
+    size_t nleft = n; // 剩下的未读字节数
+    ssize_t nread;
+    char *bufp = usrbuf;
+
+    while (nleft > 0) {
+        if ((nread = read(fd, bufp, nleft)) < 0) {
+            if (errno == EINTR) { // 被信号处理函数中断返回
+                nread = 0;
+            } else {
+                return -1;  // read出错
+            }
+        } else if (nread == 0) { // EOF
+            break;
+        }
+        nleft -= nread;
+        bufp += nread;
+    }
+
+    return (n - nleft); // 返回已经读取的字节数
+}
+
 // read line and copy to the param buf
 ssize_t io_readline(struct io_class *io, void *buf, size_t len) {
     int n, rc;

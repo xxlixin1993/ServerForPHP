@@ -253,18 +253,18 @@ int send_fastcgi(struct io_class *io, struct http_header *hhr, int sock) {
     // TODO ERROR
     // 发送params参数
     l = sizeof(paoffset) / sizeof(paoffset[0]);
-    for (i = 0; i < l; i++) {
-        // params参数的值不为空才发送
-        if (strlen((char *) (((int) hhr) + paoffset[i])) > 0)
-        {
-            if (sendParamsRecord(sock, requestId, paname[i], strlen(paname[i]),
-                                 (char *) (((int) hhr) + paoffset[i]),
-                                 strlen((char *) (((int) hhr) + paoffset[i]))) < 0) {
-                error("sendParamsRecord error", 1);
-                return -1;
-            }
-        }
-    }
+//    for (i = 0; i < l; i++) {
+//        // params参数的值不为空才发送
+//        if (strlen((char *) (((int) hhr) + paoffset[i])) > 0)
+//        {
+//            if (sendParamsRecord(sock, requestId, paname[i], strlen(paname[i]),
+//                                 (char *) (((int) hhr) + paoffset[i]),
+//                                 strlen((char *) (((int) hhr) + paoffset[i]))) < 0) {
+//                error("sendParamsRecord error", 1);
+//                return -1;
+//            }
+//        }
+//    }
 
     // 发送空的params参数
     if (sendEmptyParamsRecord(sock, requestId) < 0) {
@@ -304,9 +304,7 @@ int send_fastcgi(struct io_class *io, struct http_header *hhr, int sock) {
 /*
  * php处理结果发送给客户端
  */
-int send_to_cli(int fd, int outlen, char *out,
-                int errlen, char *err, FCGI_EndRequestBody *endr
-) {
+ssize_t send_to_cli(int fd, int outlen, char *out, int errlen, char *err, FCGI_EndRequestBody *endr) {
     char *p;
     int n;
 
@@ -440,7 +438,7 @@ int recv_fastcgi(int fd, int sock) {
     requestId = sock;
 
     // 读取处理结果
-    if (recvRecord(io_read, send_to_cli, fd, sock, requestId) < 0) {
+    if (recvRecord(http_readn, send_to_cli, fd, sock, requestId) < 0) {
         error("recvRecord error", 1);
         return -1;
     }

@@ -25,7 +25,7 @@ ssize_t io_read(struct io_class *io, char *buf, size_t len);
 // read line and copy to the param buf
 ssize_t io_readline(struct io_class *io, void *buf, size_t len);
 
-
+ssize_t http_readn(int fd, void *usrbuf, size_t n);
 
 //ssize_t io_write(int fd, void *usrbuf, size_t n);
 
